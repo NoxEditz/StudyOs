@@ -1,0 +1,16 @@
+workflows:
+  ios:
+    name: Build iOS App
+    scripts:
+      - name: Install Dependencies
+        scripts:
+          - brew install cocoapods
+          - pod install
+      - name: Build with Xcode
+        scripts:
+          - xcodebuild -workspace YourApp.xcworkspace -scheme YourApp -configuration Release -archivePath $WORKSPACE_PATH/YourApp.xcarchive archive
+      - name: Export IPA
+        scripts:
+          - xcodebuild -exportArchive -archivePath $WORKSPACE_PATH/YourApp.xcarchive -exportPath $WORKSPACE_PATH/YourApp.ipa -exportOptionsPlist YourExportOptions.plist
+    artifacts:
+      - YourApp.ipa
