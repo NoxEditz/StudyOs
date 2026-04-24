@@ -3,14 +3,14 @@ workflows:
     name: Build iOS App
     scripts:
       - name: Install Dependencies
-        scripts:
-          - brew install cocoapods
-          - pod install
+        script: |
+          brew install cocoapods
+          pod install
       - name: Build with Xcode
-        scripts:
-          - xcodebuild -workspace YourApp.xcworkspace -scheme YourApp -configuration Release -archivePath $WORKSPACE_PATH/YourApp.xcarchive archive
+        script: |
+          xcodebuild -workspace StudyOs.xcworkspace -scheme StudyOs -configuration Release -archivePath $WORKSPACE_PATH/StudyOs.xcarchive archive
       - name: Export IPA
-        scripts:
-          - xcodebuild -exportArchive -archivePath $WORKSPACE_PATH/YourApp.xcarchive -exportPath $WORKSPACE_PATH/YourApp.ipa -exportOptionsPlist YourExportOptions.plist
+        script: |
+          xcodebuild -exportArchive -archivePath $WORKSPACE_PATH/StudyOs.xcarchive -exportPath $WORKSPACE_PATH/StudyOs.ipa -exportOptionsPlist ExportOptions.plist
     artifacts:
-      - YourApp.ipa
+      - $WORKSPACE_PATH/StudyOs.ipa
