@@ -1,0 +1,59 @@
+{
+  "name": "studyos",
+  "version": "1.0.0",
+  "description": "StudyOS - Your Ultimate Study Companion",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build --win --publish never",
+    "dist": "npm run build",
+    "prepare:web": "node scripts/prepare-web.js",
+    "clean:generated": "node scripts/clean-generated.js",
+    "organize": "node scripts/organize-project.js",
+    "ios:sync": "npm run prepare:web && npx cap sync ios",
+    "ios:open": "npx cap open ios",
+    "ios:setup": "npm run prepare:web && npx cap add ios && npx cap sync ios"
+  },
+  "keywords": [
+    "study",
+    "productivity",
+    "os"
+  ],
+  "author": "Antigravity",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^41.2.2",
+    "electron-builder": "^26.8.1",
+    "typescript": "^6.0.3"
+  },
+  "build": {
+    "appId": "com.studyos.app",
+    "productName": "StudyOS",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "assets/icon.png",
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "forceCodeSigning": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "StudyOS",
+      "license": "LICENSE",
+      "artifactName": "StudyOS-Setup-${version}.${ext}"
+    }
+  },
+  "dependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1"
+  }
+}

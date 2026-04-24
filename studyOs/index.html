@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="StudyOS: Arabic study planner with schedule, timer, notes, flashcards, and offline sync.">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StudyOS">
+<title>StudyOS — ثانوية عامة ٢٠٢٦</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<noscript>
+  <div style="padding:16px;background:#111;color:#fff;text-align:center;font-family:Cairo,sans-serif">
+    يلزم تفعيل JavaScript لتشغيل StudyOS بشكل كامل.
+  </div>
+</noscript>
+
+<!-- Custom Title Bar -->
+<div id="titlebar">
+  <div class="titlebar-drag">
+    <div class="titlebar-brand">
+      <span class="titlebar-logo">S<span>OS</span></span>
+      <span class="titlebar-title">StudyOS</span>
+      <span class="titlebar-version">v1.0</span>
+    </div>
+  </div>
+  <div class="titlebar-controls">
+    <button class="tb-btn tb-minimize" onclick="window.electronAPI?.minimize()" title="تصغير">
+      <svg width="12" height="12" viewBox="0 0 12 12"><rect y="5" width="12" height="2" rx="1" fill="currentColor"/></svg>
+    </button>
+    <button class="tb-btn tb-maximize" onclick="window.electronAPI?.maximize()" title="تكبير">
+      <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+    <button class="tb-btn tb-close" onclick="window.electronAPI?.close()" title="إغلاق">
+      <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<canvas id="bg-canvas"></canvas>
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<div id="intro-page">
+  <div class="intro-particles" id="intro-particles"></div>
+  <div class="intro-content">
+    <div class="intro-logo"><span class="study">Study</span><span class="os">OS</span></div>
+    <div class="intro-tagline">نظام المذاكرة المتكامل • ثانوية عامة ٢٠٢٦</div>
+    <div class="intro-loader"><div class="intro-loader-bar" id="intro-bar"></div></div>
+    <div class="intro-loader-text" id="intro-status">جاري تهيئة النظام...</div>
+    <div class="intro-stats" id="intro-stats">
+      <div class="intro-stat"><div class="n" id="is-days">—</div><div class="l">يوم للامتحانات</div></div>
+      <div class="intro-stat"><div class="n">8</div><div class="l">مواد دراسية</div></div>
+    </div>
+    <button class="intro-enter-btn" id="intro-enter-btn" onclick="enterApp()">🚀 ادخل StudyOS</button>
+  </div>
+</div>
+
+<div id="app">
+  <nav id="sidebar">
+    <div class="sidebar-logo">S<span>OS</span></div>
+    <div class="nav-scroll">
+      <button type="button" class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span><span class="nav-label">الرئيسية</span></button>
+      <button type="button" class="nav-item" onclick="showPage('schedule',this)"><span class="nav-icon">📅</span><span class="nav-label">الجدول</span></button>
+      <button type="button" class="nav-item" onclick="showPage('subjects',this)"><span class="nav-icon">📚</span><span class="nav-label">المواد</span></button>
+      <button type="button" class="nav-item" onclick="showPage('flashcards',this)"><span class="nav-icon">🃏</span><span class="nav-label">بطاقات</span></button>
+      <button type="button" class="nav-item" onclick="showPage('quiz',this)"><span class="nav-icon">🧠</span><span class="nav-label">اختبار</span></button>
+      <button type="button" class="nav-item" onclick="showPage('notes',this)"><span class="nav-icon">📝</span><span class="nav-label">ملاحظات</span></button>
+      <button type="button" class="nav-item" onclick="showPage('timer',this)"><span class="nav-icon">⏱</span><span class="nav-label">تايمر</span></button>
+      <button type="button" class="nav-item" onclick="showPage('habits',this)"><span class="nav-icon">🔥</span><span class="nav-label">عادات</span></button>
+      <button type="button" class="nav-item" onclick="showPage('kanban',this)"><span class="nav-icon">📋</span><span class="nav-label">المهام</span></button>
+      <button type="button" class="nav-item" onclick="showPage('calendar',this)"><span class="nav-icon">🗓</span><span class="nav-label">التقويم</span></button>
+      <button type="button" class="nav-item" onclick="showPage('games',this)"><span class="nav-icon">🎮</span><span class="nav-label">ألعاب</span></button>
+      <button type="button" class="nav-item" onclick="showPage('tools',this)"><span class="nav-icon">🧮</span><span class="nav-label">أدوات</span></button>
+      <button type="button" class="nav-item" onclick="showPage('mood',this)"><span class="nav-icon">💭</span><span class="nav-label">المزاج</span></button>
+      <button type="button" class="nav-item" onclick="showPage('achievements',this)"><span class="nav-icon">🏆</span><span class="nav-label">إنجازات</span></button>
+      <button type="button" class="nav-item" onclick="showPage('settings',this)"><span class="nav-icon">⚙️</span><span class="nav-label">إعدادات</span></button>
+    </div>
+    <div class="sidebar-footer">
+      <div style="font-size:2rem;text-align:center;margin-bottom:8px" class="user-avatar">🐣</div>
+      <div class="xp-mini">
+        <div class="xp-mini-label"><span id="sb-level">Lv. 1</span><span id="sb-xp">0 XP</span></div>
+        <div class="xp-mini-bar"><div class="xp-mini-fill" id="sb-xp-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </nav>
+  <main id="main">
+    <div id="topbar">
+      <div class="topbar-left"><h1 id="page-title">الرئيسية</h1><p id="page-sub">لوحة التحكم</p></div>
+      <div class="topbar-right">
+        <div class="level-badge"><span class="lv">المستوى</span><span class="ln" id="tb-level">1</span><span id="tb-title">مبتدئ</span></div>
+        <div class="streak-badge"><span>🔥</span><span id="tb-streak">0</span></div>
+        <div class="search-btn" role="button" tabindex="0" aria-label="فتح البحث" onclick="openSearch()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSearch();}" title="Ctrl+K">🔍</div>
+        <div class="notif-btn" role="button" tabindex="0" aria-label="الإشعارات" onclick="showToast('✅ لا توجد إشعارات')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showToast('✅ لا توجد إشعارات');}">🔔</div>
+        <div class="user-avatar" style="font-size:1.5rem;background:var(--bg3);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)">🐣</div>
+      </div>
+    </div>
+
+    <div class="page active" id="page-dashboard">
+      <div class="dash-hero">
+        <div><h2 id="dash-greeting">مرحباً،<br><span>بطل الثانوية</span> 🎓</h2><p id="dash-date-label"></p></div>
+        <div class="next-exam-card" id="next-exam-mini" style="display:none"></div>
+      </div>
+      <div class="stats-row" id="dash-stats"></div>
+      <div class="section-hd"><h2>📋 جدول الامتحانات</h2></div>
+      <div class="exams-grid" id="exams-grid"></div>
+      <div class="dash-two-col">
+        <div>
+          <div class="section-hd"><h2>📆 جلسات اليوم</h2><button class="btn-outline btn-sm" onclick="openAddSessionModal()">+ إضافة</button></div>
+          <div id="today-sessions-dash"></div>
+          <div class="study-graph-wrap"><h3>📈 نشاط ١٤ يوم</h3><div id="study-graph"></div></div>
+        </div>
+        <div>
+          <div class="section-hd"><h2>📊 تقدم المواد</h2></div>
+          <div id="quick-progress"></div>
+          <div class="heatmap-wrap"><h3>🗓 خريطة النشاط - ٩٠ يوم</h3><div class="heatmap-grid" id="heatmap-grid"></div></div>
+        </div>
+      </div>
+      <div class="tip-card"><div class="tip-icon">💡</div><div class="tip-text" id="tip-text">...</div></div>
+    </div>
+
+    <div class="page" id="page-schedule">
+      <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap;">
+        <button class="btn" onclick="openAddSessionModal()">+ إضافة جلسة</button>
+        <div class="week-nav">
+          <button class="btn-outline btn-sm" onclick="prevWeek()">→ سابق</button>
+          <span id="week-label"></span>
+          <button class="btn-outline btn-sm" onclick="nextWeek()">← تالي</button>
+        </div>
+      </div>
+      <div class="week-grid" id="week-grid"></div>
+      <div class="section-hd"><h2>📋 سجل الجلسات</h2></div>
+      <div id="all-sessions-list"></div>
+    </div>
+
+    <div class="page" id="page-subjects"><div class="subj-grid" id="subj-grid"></div></div>
+
+    <div class="page" id="page-flashcards">
+      <div id="deck-grid-wrapper">
+        <div class="section-hd"><h2>🃏 مجموعات البطاقات</h2><button class="btn-outline btn-sm" onclick="toggleFCForm()">+ بطاقة جديدة</button></div>
+        <div id="fc-form-wrap" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px" class="fc-form">
+          <select id="fc-subj-sel"><option value="">اختر المادة</option></select>
+          <input id="fc-q-inp" placeholder="السؤال / الوجه الأمامي" />
+          <textarea id="fc-a-inp" placeholder="الإجابة / الوجه الخلفي" rows="2"></textarea>
+          <button class="btn" onclick="addFlashcard()">💾 إضافة</button>
+        </div>
+        <div class="fc-deck-grid" id="fc-deck-grid"></div>
+      </div>
+      <div id="fc-study-area" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <button class="btn-outline btn-sm" onclick="exitDeck()">← العودة</button>
+          <span id="fc-deck-title" style="font-weight:700"></span>
+          <span style="font-size:0.7rem;color:var(--text2)">اضغط للقلب</span>
+        </div>
+        <div class="fc-scene">
+          <div class="fc-card" id="fc-card" onclick="flipCard()">
+            <div class="fc-face front"><div id="fc-front" style="font-size:1.1rem;font-weight:700"></div></div>
+            <div class="fc-face back"><div id="fc-back"></div></div>
+          </div>
+        </div>
+        <div class="fc-nav" id="fc-nav">
+          <button onclick="prevCard()">→ سابق</button>
+          <span id="fc-counter">0 / 0</span>
+          <button onclick="nextCard()">تالي ←</button>
+        </div>
+        <div class="fc-eval" id="fc-eval" style="display:none;gap:10px;justify-content:center;margin-top:16px;">
+          <button class="btn-outline" style="color:var(--red);border-color:rgba(239,68,68,0.5);" onclick="evalCard('hard')">صعب</button>
+          <button class="btn-outline" style="color:var(--gold);border-color:rgba(240,192,64,0.5);" onclick="evalCard('medium')">متوسط</button>
+          <button class="btn-outline" style="color:var(--green);border-color:rgba(74,222,128,0.5);" onclick="evalCard('easy')">سهل</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-quiz">
+      <div id="quiz-setup-area">
+        <div class="section-hd"><h2>اختر مادة للاختبار</h2></div>
+        <div class="quiz-opts" id="quiz-opts"></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn" onclick="startQuizUI()">🚀 ابدأ الاختبار</button>
+          <span style="font-size:0.8rem;color:var(--text2)">أسئلة عشوائية</span>
+        </div>
+      </div>
+      <div id="quiz-play-area" style="display:none">
+        <div class="quiz-progress"><div class="quiz-progress-bar" id="quiz-prog-bar" style="width:0%"></div></div>
+        <div id="quiz-q-num" style="font-size:0.75rem;color:var(--text2);margin-bottom:8px;text-align:center"></div>
+        <div id="quiz-q-text"></div>
+        <div id="quiz-choices"></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-notes">
+      <div class="note-form-wrap card" style="margin-bottom:16px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input id="note-title-inp" placeholder="عنوان الملاحظة" style="flex:1;min-width:140px" />
+          <select id="note-subj-inp" style="min-width:130px"><option value="عام">عام</option></select>
+        </div>
+        <textarea id="note-body-inp" placeholder="اكتب ملاحظتك... (**غامق** *مائل* - نقطة)" rows="4"></textarea>
+        <button class="btn" onclick="saveNoteUI()">💾 حفظ الملاحظة</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="notes-toolbar"></div>
+      <div id="notes-list"></div>
+    </div>
+
+    <div class="page" id="page-timer">
+      <div class="timer-container">
+        <div class="timer-modes" id="timer-modes"></div>
+        <div class="timer-ring">
+          <svg width="260" height="260" viewBox="0 0 260 260">
+            <circle cx="130" cy="130" r="120" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"/>
+            <circle id="timer-progress" cx="130" cy="130" r="120" fill="none" stroke="url(#tg)" stroke-width="8" stroke-linecap="round" stroke-dasharray="753.98" stroke-dashoffset="753.98" style="transition:stroke-dashoffset 1s linear"/>
+            <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#c9922a"/><stop offset="100%" stop-color="#f0c040"/></linearGradient></defs>
+          </svg>
+          <div id="timer-display">25:00</div>
+          <div class="timer-label-center" id="timer-mode-label">وقت التركيز 🎯</div>
+        </div>
+        <div class="timer-controls">
+          <button class="timer-btn timer-btn-start" id="timer-start-btn" onclick="toggleTimerUI()">▶ ابدأ</button>
+          <button class="timer-btn timer-btn-reset" onclick="resetTimerUI()">↺ إعادة</button>
+          <button class="timer-btn timer-btn-reset" onclick="toggleFocusMode()" style="font-size:0.8rem">🌙 التركيز الكامل</button>
+        </div>
+        <div id="pomo-dots" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"></div>
+        <div id="pomo-label" style="font-size:0.75rem;color:var(--text2)">جلسات اليوم: 0</div>
+        <div class="ambient-bar">
+          <span style="font-size:0.75rem;color:var(--text3);align-self:center">🎵 أصوات:</span>
+          <button class="ambient-btn" onclick="playAmbient('rain')">🌧️ مطر</button>
+          <button class="ambient-btn" onclick="playAmbient('cafe')">☕ مقهى</button>
+          <button class="ambient-btn" onclick="playAmbient('forest')">🌿 غابة</button>
+          <button class="ambient-btn" onclick="playAmbient('off')">🔇 إيقاف</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-habits">
+      <div class="habit-add-row">
+        <span id="habit-emoji-pick" style="font-size:1.4rem;cursor:pointer" onclick="cycleHabitEmoji()">⭐</span>
+        <input id="habit-name-inp" placeholder="اسم العادة الجديدة..." />
+        <button class="btn btn-sm" onclick="addHabit()">+ إضافة</button>
+      </div>
+      <div id="habit-grid"></div>
+    </div>
+
+    <div class="page" id="page-kanban">
+      <div class="kb-header card" style="margin-bottom:16px;display:flex;gap:10px;">
+        <input id="kb-new-task" placeholder="أضف مهمة جديدة..." style="flex:1;padding:10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:Cairo;outline:none;" onkeydown="if(event.key==='Enter')addKanbanTask()" />
+        <button class="btn" onclick="addKanbanTask()">+ إضافة</button>
+      </div>
+      <div class="kb-board" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;">
+        <div class="kb-col" ondragover="kbAllowDrop(event)" ondrop="kbDrop(event, 'todo')">
+          <div class="kb-col-header" style="color:var(--text)">للقيام بها 📌</div>
+          <div class="kb-col-body" id="kb-col-todo"></div>
+        </div>
+        <div class="kb-col" ondragover="kbAllowDrop(event)" ondrop="kbDrop(event, 'in_progress')">
+          <div class="kb-col-header" style="color:var(--gold)">قيد التنفيذ ⏳</div>
+          <div class="kb-col-body" id="kb-col-in_progress"></div>
+        </div>
+        <div class="kb-col" ondragover="kbAllowDrop(event)" ondrop="kbDrop(event, 'done')">
+          <div class="kb-col-header" style="color:var(--green)">مكتملة ✅</div>
+          <div class="kb-col-body" id="kb-col-done"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-calendar">
+      <div class="cal-header">
+        <button class="btn-outline btn-sm" onclick="calPrev()">→ سابق</button>
+        <h3 id="cal-month"></h3>
+        <button class="btn-outline btn-sm" onclick="calNext()">← تالي</button>
+      </div>
+      <div id="cal-grid"></div>
+    </div>
+
+    <div class="page" id="page-games">
+      <div class="games-grid">
+        <div class="game-card" onclick="launchGameUI('snake')"><div class="game-card-icon">🐍</div><div class="game-card-name">Snake</div><div class="game-card-desc">الحية الكلاسيكية</div></div>
+        <div class="game-card" onclick="launchGameUI('mathrace')"><div class="game-card-icon">➗</div><div class="game-card-name">سباق الرياضيات</div><div class="game-card-desc">احسب أسرع من الوقت</div></div>
+        <div class="game-card" onclick="launchGameUI('memory')"><div class="game-card-icon">🧩</div><div class="game-card-name">لعبة الذاكرة</div><div class="game-card-desc">طابق البطاقات</div></div>
+        <div class="game-card" onclick="launchGameUI('wordscramble')"><div class="game-card-icon">🔤</div><div class="game-card-name">كلمات مبعثرة</div><div class="game-card-desc">رتب الحروف</div></div>
+      </div>
+      <div id="game-container">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <button class="btn-outline btn-sm" onclick="exitGameUI()">← خروج</button>
+          <div id="game-score" style="font-size:0.85rem;color:var(--text2)"></div>
+        </div>
+        <div id="game-canvas-wrap"></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-tools">
+      <div class="tools-grid">
+        <div class="tool-card"><h3>📅 عداد الامتحانات</h3><div id="countdown-tool"></div></div>
+        <div class="tool-card"><h3>📊 حاسبة الدرجات</h3>
+          <div style="display:flex;gap:8px"><input class="tool-input" id="grade-inp" type="number" inputmode="numeric" placeholder="الدرجة (0-100)" style="margin:0;flex:1" /><button class="btn btn-sm" onclick="calcGrade()">حساب</button></div>
+          <div class="tool-result" id="grade-result">أدخل درجتك لمعرفة التقدير</div>
+        </div>
+        <div class="tool-card"><h3>🔢 حاسبة النسب</h3>
+          <input class="tool-input" id="perc-part" type="number" inputmode="decimal" placeholder="الجزء" />
+          <input class="tool-input" id="perc-whole" type="number" inputmode="decimal" placeholder="الكل" />
+          <button class="btn btn-sm" onclick="calcPerc()">احسب النسبة</button>
+          <div class="tool-result" id="perc-result">—</div>
+        </div>
+        <div class="tool-card"><h3>⏰ توزيع وقت المذاكرة</h3>
+          <input class="tool-input" id="hours-avail" type="number" inputmode="decimal" placeholder="ساعات متاحة يومياً" />
+          <button class="btn btn-sm" onclick="calcStudyTime()">توزيع ذكي</button>
+          <div class="tool-result" id="study-time-result">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-mood">
+      <div class="card" style="margin-bottom:20px">
+        <h3 style="margin-bottom:14px;font-size:1rem;font-weight:700">😊 كيف حالك اليوم؟</h3>
+        <div class="mood-row">
+          <button class="mood-btn" data-mood="😄" onclick="logMood(this,'😄')">😄</button>
+          <button class="mood-btn" data-mood="🙂" onclick="logMood(this,'🙂')">🙂</button>
+          <button class="mood-btn" data-mood="😐" onclick="logMood(this,'😐')">😐</button>
+          <button class="mood-btn" data-mood="😔" onclick="logMood(this,'😔')">😔</button>
+          <button class="mood-btn" data-mood="😤" onclick="logMood(this,'😤')">😤</button>
+          <button class="mood-btn" data-mood="😴" onclick="logMood(this,'😴')">😴</button>
+        </div>
+      </div>
+      <div class="card"><h3 style="margin-bottom:14px;font-size:1rem;font-weight:700">📈 سجل المزاج — آخر ١٤ يوم</h3><div id="mood-history-grid" style="display:flex;flex-direction:column;gap:6px"></div></div>
+    </div>
+
+    <div class="page" id="page-achievements">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span id="ach-level-text" style="font-weight:700;font-size:0.9rem"></span>
+          <span id="ach-xp-text" style="font-size:0.8rem;color:var(--text2)"></span>
+        </div>
+        <div class="prog-wrap"><div class="prog-bar" id="ach-prog-bar" style="width:0%;background:linear-gradient(90deg,var(--gold2),var(--gold))"></div></div>
+      </div>
+      <div id="achievements-grid"></div>
+    </div>
+
+    <div class="page" id="page-settings">
+      <div class="settings-grid">
+        <div class="setting-group"><h3>👤 ملف شخصي</h3>
+          <div class="setting-row"><label>اسمك</label><input class="ni" id="setting-name" placeholder="اكتب اسمك" /></div>
+          <div style="margin-top:12px"><button class="btn btn-sm" onclick="saveSettings()">💾 حفظ</button></div>
+        </div>
+        <div class="setting-group"><h3>⏱ إعدادات التايمر</h3>
+          <div class="setting-row"><label>وقت التركيز (دقيقة)</label><input type="number" id="set-focus" value="25" min="1" max="120" class="si"/></div>
+          <div class="setting-row"><label>استراحة قصيرة (دقيقة)</label><input type="number" id="set-short" value="5" min="1" max="30" class="si"/></div>
+          <div class="setting-row"><label>استراحة طويلة (دقيقة)</label><input type="number" id="set-long" value="15" min="1" max="60" class="si"/></div>
+          <div style="margin-top:12px"><button class="btn btn-sm" onclick="saveSettings()">💾 حفظ</button></div>
+        </div>
+        <div class="setting-group"><h3>🎨 التفضيلات</h3>
+          <div class="setting-row"><label>أصوات الإشعارات</label><div class="toggle on" id="toggle-sound" onclick="this.classList.toggle('on')"></div></div>
+          <div class="setting-row"><label>إشعارات التايمر</label><div class="toggle on" id="toggle-notif" onclick="this.classList.toggle('on')"></div></div>
+        </div>
+        <div class="setting-group"><h3>🗑️ البيانات</h3>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-outline" onclick="cloudBackup()">☁️ نسخ احتياطي سحابي</button>
+            <button class="btn-outline" onclick="cloudRestore()">☁️ استرجاع من السحابة</button>
+            <div style="font-size:0.72rem;color:var(--text2);padding:6px 2px">☁️ المزامنة السحابية التلقائية مفعّلة دائماً</div>
+            <button class="btn-outline" onclick="exportData()">📤 تصدير (JSON)</button>
+            <button class="btn-outline" onclick="importData()">📥 استيراد</button>
+            <button class="btn-outline" style="color:var(--red);border-color:rgba(239,68,68,0.3)" onclick="clearData()">🗑️ حذف كل البيانات</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-ov" id="modal-session">
+  <div class="modal-box">
+    <h3>📅 إضافة جلسة مذاكرة</h3>
+    <select id="ms-subject"><option value="">اختر المادة</option></select>
+    <input type="date" id="ms-date" />
+    <input type="number" id="ms-hours" placeholder="عدد الساعات" min="0.5" max="12" step="0.5" />
+    <input type="text" id="ms-notes" placeholder="ملاحظات (اختياري)" />
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeModal('modal-session')">إلغاء</button>
+      <button class="btn" onclick="saveSessionModal()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<div id="search-overlay" onclick="closeSearch()">
+  <div class="search-container" onclick="event.stopPropagation()">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="global-search-input" placeholder="ابحث... [Esc للإغلاق]" oninput="handleGlobalSearch(this.value)">
+    </div>
+    <div id="search-results" class="search-results"></div>
+  </div>
+</div>
+
+<div id="focus-mode-overlay">
+  <div id="breathe-anim" style="display:none;position:absolute;inset:0;background:var(--bg);z-index:100;flex-direction:column;align-items:center;justify-content:center;">
+    <div class="breathe-circle"></div>
+    <div id="breathe-text" style="font-size:2rem;font-weight:900;margin-top:40px;color:var(--gold);">استعد للتركيز...</div>
+  </div>
+  <div class="focus-quote" id="focus-quote"></div>
+  <div class="focus-timer-big" id="focus-timer-big">25:00</div>
+  <div style="font-size:1rem;color:var(--text3)" id="focus-subject-label">🎯 وقت التركيز</div>
+  <div style="display:flex;gap:12px;margin-top:8px">
+    <button class="timer-btn timer-btn-start" id="focus-start-btn" onclick="toggleTimerUI()" style="padding:12px 28px">▶ تشغيل</button>
+    <button class="focus-exit-btn" onclick="toggleFocusMode()">✕ خروج</button>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/gamification.js"></script>
+<script src="js/intro.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/schedule.js"></script>
+<script src="js/study.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/habits_calendar.js"></script>
+<script src="js/kanban.js"></script>
+<script src="js/games.js"></script>
+<script src="js/tools_misc.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/core.js"></script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
