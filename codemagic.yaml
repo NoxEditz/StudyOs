@@ -1,16 +1,117 @@
 workflows:
-  ios:
-    name: Build iOS App
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # WORKFLOW 1 — iOS Simulator Build (100% FREE, zero signing needed)
+  # Use this to verify the app builds correctly without any Apple account.
+  # Produces a .app bundle you can run in Xcode Simulator locally.
+  # ─────────────────────────────────────────────────────────────────────────────
+  ios-simulator:
+    name: iOS Simulator Build (Free – No Signing)
+    max_build_duration: 60
+    instance_type: mac_mini_m2       # Free tier: 500 min/month on this machine
+    environment:
+      xcode: latest                  # Pinning to a version (e.g. 16.2) is safer
+      cocoapods: default
     scripts:
-      - name: Install Dependencies
+      - name: Install CocoaPods dependencies
         script: |
-          brew install cocoapods
-          pod install
-      - name: Build with Xcode
+          cd studyOs
+          pod install --repo-update
+      - name: Build for iOS Simulator (no signing required)
         script: |
-          xcodebuild -workspace StudyOs.xcworkspace -scheme StudyOs -configuration Release -archivePath $WORKSPACE_PATH/StudyOs.xcarchive archive
+          xcodebuild \
+            -workspace studyOs/StudyOs.xcworkspace \
+            -scheme StudyOs \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build | xcpretty
+    artifacts:
+      - $CM_BUILD_DIR/DerivedData/Build/Products/**/*.app
+    publishing:
+      email:
+        recipients:
+          - your@email.com           # ← Replace with your email
+        notify:
+          success: true
+          failure: true
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # WORKFLOW 2 — Development IPA (Free Apple ID, sideload via AltStore)
+  #
+  # SETUP STEPS (one-time):
+  #   1. Open Xcode → Settings → Accounts → add your free Apple ID
+  #   2. In Keychain Access → export your "Apple Development" certificate as .p12
+  #   3. In Xcode → download your provisioning profile (Product → Archive → Distribute)
+  #   4. In Codemagic UI → App Settings → Environment variables, add:
+  #        CM_CERTIFICATE          = base64-encoded .p12 file
+  #        CM_CERTIFICATE_PASSWORD = your .p12 password
+  #        CM_PROVISIONING_PROFILE = base64-encoded .mobileprovision file
+  #   5. Run this workflow → download the IPA → sideload via AltStore (free)
+  # ─────────────────────────────────────────────────────────────────────────────
+  ios-development-ipa:
+    name: iOS Development IPA (Free Apple ID + AltStore)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+      cocoapods: default
+      groups:
+        - manual_code_signing       # Contains CM_CERTIFICATE, CM_CERTIFICATE_PASSWORD,
+                                    # CM_PROVISIONING_PROFILE (set in Codemagic UI)
+    scripts:
+      - name: Install CocoaPods dependencies
+        script: |
+          cd studyOs
+          pod install --repo-update
+
+      - name: Set up keychain for code signing
+        script: |
+          keychain initialize
+          # Decode and add your .p12 certificate
+          echo $CM_CERTIFICATE | base64 --decode > /tmp/certificate.p12
+          keychain add-certificates \
+            --certificate /tmp/certificate.p12 \
+            --certificate-password $CM_CERTIFICATE_PASSWORD
+          # Decode and install your provisioning profile
+          echo $CM_PROVISIONING_PROFILE | base64 --decode > /tmp/profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          UUID=$(grep -a -A1 'UUID' /tmp/profile.mobileprovision | tail -1 | \
+            tr -d '\t ' | sed 's/<string>//;s/<\/string>//')
+          cp /tmp/profile.mobileprovision \
+            ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+
+      - name: Build & Archive
+        script: |
+          xcodebuild \
+            -workspace studyOs/StudyOs.xcworkspace \
+            -scheme StudyOs \
+            -configuration Release \
+            -archivePath "$CM_BUILD_DIR/StudyOs.xcarchive" \
+            -sdk iphoneos \
+            CODE_SIGN_STYLE=Manual \
+            archive | xcpretty
+
       - name: Export IPA
         script: |
-          xcodebuild -exportArchive -archivePath $WORKSPACE_PATH/StudyOs.xcarchive -exportPath $WORKSPACE_PATH/StudyOs.ipa -exportOptionsPlist ExportOptions.plist
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$CM_BUILD_DIR/StudyOs.xcarchive" \
+            -exportPath "$CM_BUILD_DIR/ipa" \
+            -exportOptionsPlist ExportOptions.plist | xcpretty
+
     artifacts:
-      - $WORKSPACE_PATH/StudyOs.ipa
+      - $CM_BUILD_DIR/ipa/*.ipa
+      - $CM_BUILD_DIR/StudyOs.xcarchive
+
+    publishing:
+      email:
+        recipients:
+          - your@email.com           # ← Replace with your email
+        notify:
+          success: true
+          failure: true
