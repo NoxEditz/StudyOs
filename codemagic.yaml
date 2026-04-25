@@ -1,117 +1,85 @@
 workflows:
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # WORKFLOW 1 — iOS Simulator Build (100% FREE, zero signing needed)
-  # Use this to verify the app builds correctly without any Apple account.
-  # Produces a .app bundle you can run in Xcode Simulator locally.
-  # ─────────────────────────────────────────────────────────────────────────────
-  ios-simulator:
-    name: iOS Simulator Build (Free – No Signing)
-    max_build_duration: 60
-    instance_type: mac_mini_m2       # Free tier: 500 min/month on this machine
-    environment:
-      xcode: latest                  # Pinning to a version (e.g. 16.2) is safer
-      cocoapods: default
-    scripts:
-      - name: Install CocoaPods dependencies
-        script: |
-          cd studyOs
-          pod install --repo-update
-      - name: Build for iOS Simulator (no signing required)
-        script: |
-          xcodebuild \
-            -workspace studyOs/StudyOs.xcworkspace \
-            -scheme StudyOs \
-            -configuration Debug \
-            -sdk iphonesimulator \
-            -destination "generic/platform=iOS Simulator" \
-            -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            build | xcpretty
-    artifacts:
-      - $CM_BUILD_DIR/DerivedData/Build/Products/**/*.app
-    publishing:
-      email:
-        recipients:
-          - your@email.com           # ← Replace with your email
-        notify:
-          success: true
-          failure: true
-
-  # ─────────────────────────────────────────────────────────────────────────────
-  # WORKFLOW 2 — Development IPA (Free Apple ID, sideload via AltStore)
+  # ═══════════════════════════════════════════════════════════════════════════
+  # StudyOs — Sideloadly IPA Build
   #
-  # SETUP STEPS (one-time):
-  #   1. Open Xcode → Settings → Accounts → add your free Apple ID
-  #   2. In Keychain Access → export your "Apple Development" certificate as .p12
-  #   3. In Xcode → download your provisioning profile (Product → Archive → Distribute)
-  #   4. In Codemagic UI → App Settings → Environment variables, add:
-  #        CM_CERTIFICATE          = base64-encoded .p12 file
-  #        CM_CERTIFICATE_PASSWORD = your .p12 password
-  #        CM_PROVISIONING_PROFILE = base64-encoded .mobileprovision file
-  #   5. Run this workflow → download the IPA → sideload via AltStore (free)
-  # ─────────────────────────────────────────────────────────────────────────────
-  ios-development-ipa:
-    name: iOS Development IPA (Free Apple ID + AltStore)
+  # HOW IT WORKS:
+  #   1. Codemagic builds the app and produces an unsigned .ipa
+  #   2. You download the .ipa from the Codemagic build artifacts page
+  #   3. Open Sideloadly on your Windows PC
+  #   4. Drag the .ipa into Sideloadly, log in with your free Apple ID
+  #   5. Sideloadly signs it and installs directly to your iPhone via USB
+  #
+  # COST: $0 — Free Codemagic tier (500 min/month on M2), free Apple ID
+  # NO certificates or provisioning profiles needed in Codemagic.
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  ios-sideloadly-ipa:
+    name: iOS IPA for Sideloadly
     max_build_duration: 60
     instance_type: mac_mini_m2
+
     environment:
       xcode: latest
       cocoapods: default
-      groups:
-        - manual_code_signing       # Contains CM_CERTIFICATE, CM_CERTIFICATE_PASSWORD,
-                                    # CM_PROVISIONING_PROFILE (set in Codemagic UI)
+      vars:
+        XCODE_WORKSPACE: "studyOs/StudyOs.xcworkspace"
+        XCODE_SCHEME: "studyOs"
+        OUTPUT_DIR: "$CM_BUILD_DIR/output"
+
     scripts:
+
       - name: Install CocoaPods dependencies
         script: |
           cd studyOs
           pod install --repo-update
 
-      - name: Set up keychain for code signing
+      - name: Archive app (unsigned — Sideloadly will sign on your PC)
         script: |
-          keychain initialize
-          # Decode and add your .p12 certificate
-          echo $CM_CERTIFICATE | base64 --decode > /tmp/certificate.p12
-          keychain add-certificates \
-            --certificate /tmp/certificate.p12 \
-            --certificate-password $CM_CERTIFICATE_PASSWORD
-          # Decode and install your provisioning profile
-          echo $CM_PROVISIONING_PROFILE | base64 --decode > /tmp/profile.mobileprovision
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          UUID=$(grep -a -A1 'UUID' /tmp/profile.mobileprovision | tail -1 | \
-            tr -d '\t ' | sed 's/<string>//;s/<\/string>//')
-          cp /tmp/profile.mobileprovision \
-            ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          set -o pipefail
+          mkdir -p "$OUTPUT_DIR"
 
-      - name: Build & Archive
-        script: |
-          xcodebuild \
-            -workspace studyOs/StudyOs.xcworkspace \
-            -scheme StudyOs \
+          xcodebuild archive \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
             -configuration Release \
-            -archivePath "$CM_BUILD_DIR/StudyOs.xcarchive" \
-            -sdk iphoneos \
+            -archivePath "$OUTPUT_DIR/StudyOs.xcarchive" \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_STYLE=Manual \
-            archive | xcpretty
+            | xcpretty
 
-      - name: Export IPA
+      - name: Package into .ipa for Sideloadly
         script: |
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$CM_BUILD_DIR/StudyOs.xcarchive" \
-            -exportPath "$CM_BUILD_DIR/ipa" \
-            -exportOptionsPlist ExportOptions.plist | xcpretty
+          set -e
+          PAYLOAD_DIR="$OUTPUT_DIR/Payload"
+          mkdir -p "$PAYLOAD_DIR"
+
+          # Find the .app inside the archive
+          APP_PATH=$(find "$OUTPUT_DIR/StudyOs.xcarchive/Products/Applications" \
+            -maxdepth 1 -name "*.app" | head -1)
+
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: .app not found in archive. Check XCODE_SCHEME name above."
+            exit 1
+          fi
+
+          echo "Found: $(basename $APP_PATH)"
+          cp -r "$APP_PATH" "$PAYLOAD_DIR/"
+
+          cd "$OUTPUT_DIR"
+          zip -r StudyOs.ipa Payload
+          rm -rf Payload
+          echo "IPA ready. Download it from the Artifacts section below."
 
     artifacts:
-      - $CM_BUILD_DIR/ipa/*.ipa
-      - $CM_BUILD_DIR/StudyOs.xcarchive
+      - $CM_BUILD_DIR/output/StudyOs.ipa
 
     publishing:
       email:
         recipients:
-          - your@email.com           # ← Replace with your email
+          - your@email.com          # ← put your email here
         notify:
           success: true
           failure: true
