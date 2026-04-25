@@ -1,36 +1,22 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Podfile for StudyOs
-# Place this file inside the studyOs/ folder (same level as StudyOs.xcodeproj)
-# ─────────────────────────────────────────────────────────────────────────────
+# Podfile — place this file inside the studyOs/ folder
+# (same directory as StudyOs.xcodeproj)
+#
+# After adding this file, run:   cd studyOs && pod install
+# Always open StudyOs.xcworkspace, NOT StudyOs.xcodeproj
 
-# Minimum iOS version your app supports
 platform :ios, '15.0'
-
-# Suppress all warnings from pods (keeps build output clean)
 inhibit_all_warnings!
-
-# Required for Swift frameworks
 use_frameworks!
 
 target 'studyOs' do
-  # ── Add your CocoaPods dependencies below ──────────────────────────────────
+  # Add your CocoaPods dependencies here.
+  # If you have none, leave this block empty — CocoaPods will still
+  # generate the .xcworkspace file that the build needs.
 
-  # Uncomment the pods your project actually uses.
-  # If your app has no CocoaPods dependencies yet, leave this block empty —
-  # CocoaPods will still generate the .xcworkspace you need.
-
-  # Example: Networking
+  # Examples (uncomment if needed):
   # pod 'Alamofire', '~> 5.8'
-
-  # Example: Image loading
   # pod 'SDWebImage', '~> 5.18'
 
-  # Example: JSON parsing
-  # pod 'SwiftyJSON', '~> 5.0'
-
-  # ────────────────────────────────────────────────────────────────────────────
-  # Test target (optional — remove if you don't have tests)
-  # ────────────────────────────────────────────────────────────────────────────
   target 'studyOsTests' do
     inherit! :search_paths
   end
@@ -40,12 +26,10 @@ target 'studyOs' do
   end
 end
 
-# Fix for Xcode 14+ build warnings on CocoaPods-generated projects
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-      # Silence "missing team ID" warning for pods
       config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
     end
   end
