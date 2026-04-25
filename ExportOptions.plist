@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      "development" works with a FREE Apple ID (personal team).
+      Change to "ad-hoc" or "app-store" only if you have the $99/year
+      Apple Developer Program membership.
+    -->
+    <key>method</key>
+    <string>development</string>
+
+    <!--
+      Your Apple Team ID — find it at:
+      https://developer.apple.com/account → Membership → Team ID
+      (Free Apple ID teams look like "XXXXXXXXXX Personal Team")
+    -->
+    <key>teamID</key>
+    <string>YOUR_TEAM_ID</string>           <!-- ← Replace this -->
+
+    <!--
+      The bundle ID of your app, e.g. "com.yourname.studyos"
+      Must match exactly what's in your Xcode project settings.
+    -->
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.yourname.StudyOs</key>     <!-- ← Replace with your Bundle ID -->
+        <string>StudyOs Development</string> <!-- ← Replace with your profile name -->
+    </dict>
+
+    <!-- Keep these as-is for development builds -->
+    <key>compileBitcode</key>
+    <false/>
+
+    <key>signingStyle</key>
+    <string>manual</string>
+
+    <key>stripSwiftSymbols</key>
+    <true/>
+
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+</dict>
+</plist>
