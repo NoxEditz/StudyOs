@@ -1,7 +1,7 @@
 workflows:
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # StudyOs — Sideloadly IPA Build
+  # StudyOS — Sideloadly IPA Build (Capacitor 8 + SPM)
   #
   # HOW IT WORKS:
   #   1. Codemagic builds the app and produces an unsigned .ipa
@@ -21,18 +21,24 @@ workflows:
 
     environment:
       xcode: latest
-      cocoapods: default
       vars:
-        XCODE_WORKSPACE: "studyOs/StudyOs.xcworkspace"
-        XCODE_SCHEME: "studyOs"
+        XCODE_PROJECT: "studyOs/ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
         OUTPUT_DIR: "$CM_BUILD_DIR/output"
 
     scripts:
 
-      - name: Install CocoaPods dependencies
+      - name: Install Node dependencies
         script: |
           cd studyOs
-          pod install --repo-update
+          npm install
+
+      - name: Prepare web directory for Capacitor
+        script: |
+          cd studyOs
+          npm run prepare:web
+          echo "Web directory contents:"
+          ls -la web/
 
       - name: Archive app (unsigned — Sideloadly will sign on your PC)
         script: |
@@ -40,14 +46,14 @@ workflows:
           mkdir -p "$OUTPUT_DIR"
 
           xcodebuild archive \
-            -workspace "$XCODE_WORKSPACE" \
+            -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
-            -archivePath "$OUTPUT_DIR/StudyOs.xcarchive" \
+            -archivePath "$OUTPUT_DIR/StudyOS.xcarchive" \
             -destination "generic/platform=iOS" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_STYLE=Manual \
+            CODE_SIGNING_STYLE=Manual \
             | xcpretty
 
       - name: Package into .ipa for Sideloadly
@@ -57,7 +63,7 @@ workflows:
           mkdir -p "$PAYLOAD_DIR"
 
           # Find the .app inside the archive
-          APP_PATH=$(find "$OUTPUT_DIR/StudyOs.xcarchive/Products/Applications" \
+          APP_PATH=$(find "$OUTPUT_DIR/StudyOS.xcarchive/Products/Applications" \
             -maxdepth 1 -name "*.app" | head -1)
 
           if [ -z "$APP_PATH" ]; then
@@ -69,12 +75,12 @@ workflows:
           cp -r "$APP_PATH" "$PAYLOAD_DIR/"
 
           cd "$OUTPUT_DIR"
-          zip -r StudyOs.ipa Payload
+          zip -r StudyOS.ipa Payload
           rm -rf Payload
           echo "IPA ready. Download it from the Artifacts section below."
 
     artifacts:
-      - $CM_BUILD_DIR/output/StudyOs.ipa
+      - $CM_BUILD_DIR/output/StudyOS.ipa
 
     publishing:
       email:
