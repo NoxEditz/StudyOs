@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+web/
+out/
+D/build-output/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Environment/Secrets
+.env
+*.local
+
+# Capacitor/iOS specific (optional - usually you want to keep ios/ folder if not generated)
+# ios/App/DerivedData/
+# ios/App/Pods/
+# ios/App/App.xcworkspace/xcuserdata/

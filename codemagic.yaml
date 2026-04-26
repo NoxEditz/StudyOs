@@ -1,0 +1,38 @@
+workflows:
+  ios-workflow:
+    name: StudyOS iOS Workflow
+    max_build_duration: 120
+    environment:
+      node: latest
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Prepare web assets
+        script: npm run prepare:web
+      - name: Capacitor sync
+        script: npx cap sync ios
+      - name: Set up code signing
+        script: |
+          # Codemagic handles code signing via UI or environment variables.
+          # For local testing/manual setup, you can use:
+          # keychain initialize
+          # app-store-connect fetch-signing-files "com.studyos.app" --type IOS_APP_STORE --save
+          # keychain add-certificates
+          echo "Code signing handled by Codemagic UI"
+      - name: Build iOS
+        script: |
+          cd ios/App
+          xcodebuild build -workspace App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS'
+    artifacts:
+      - ios/App/build/Release-iphoneos/*.ipa
+    publishing:
+      email:
+        recipients:
+          - user@example.com
