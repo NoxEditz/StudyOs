@@ -1,44 +1,49 @@
+# Codemagic CI/CD configuration for StudyOS iOS build
 workflows:
   ios-workflow:
-    name: StudyOS iOS Workflow
-    max_build_duration: 120
+    name: Build iOS App
+    max_build_duration: 30
     environment:
-      node: latest
       xcode: latest
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
+      cocoapods: default
+      node: latest
+    
     scripts:
       - name: Install dependencies
-        script: npm install
-      - name: Prepare web assets
-        script: npm run prepare:web
-      - name: Capacitor sync
-        script: npx cap sync ios
-      - name: Set up code signing
         script: |
-          # Codemagic handles code signing via UI or environment variables.
-          # For local testing/manual setup, you can use:
-          # keychain initialize
-          # app-store-connect fetch-signing-files "com.studyos.app" --type IOS_APP_STORE --save
-          # keychain add-certificates
-          echo "Code signing handled by Codemagic UI"
-      - name: Build iOS
+          npm install
+      
+      - name: Generate app icons from assets/icon.png
+        script: |
+          npx @capacitor/assets generate --iconSrc ./assets/icon.png
+      
+      - name: Prepare web files and sync Capacitor
+        script: |
+          npm run prepare:web
+          npx cap sync ios
+      
+      - name: Build iOS app
         script: |
           cd ios/App
-          xcodebuild build -project App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CONFIGURATION_BUILD_DIR=build/Release-iphoneos
-          
-          # Manual packaging into .ipa (unsigned)
-          cd build/Release-iphoneos
-          mkdir Payload
-          cp -r App.app Payload/
-          zip -r StudyOs.ipa Payload
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath $CM_BUILD_DIR/App.xcarchive \
+            archive \
+            -exportArchive \
+            -exportPath $CM_BUILD_DIR/build \
+            -exportOptionsPlist ios/App/exportOptions.plist \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROVISIONING_PROFILE" \
+            DEVELOPMENT_TEAM="$DEVELOPER_TEAM_ID"
+    
     artifacts:
-      - ios/App/build/Release-iphoneos/*.ipa
+      - build/*.ipa
+      - ios/App/App/AppIcon.appiconset/**
+    
     publishing:
       email:
         recipients:
-          - user@example.com
+          - your-email@example.com
+      slack:
+        channel: "#builds"
