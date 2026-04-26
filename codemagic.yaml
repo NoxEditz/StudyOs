@@ -15,7 +15,20 @@ workflows:
       
       - name: Generate app icons from assets/icon.png
         script: |
-          npx @capacitor/assets generate --icon-source ./assets/icon.png
+          #!/usr/bin/env bash
+          set -e
+          
+          # Install @capacitor/assets as dev dependency
+          npm install --save-dev @capacitor/assets
+          
+          # Generate icons using Node.js directly
+          node -e "
+          const { generate } = require('@capacitor/assets');
+          generate({
+            iconSrc: './assets/icon.png',
+            log: true
+          }).then(() => console.log('Icons generated successfully!'));
+          "
       
       - name: Prepare web files and sync Capacitor
         script: |
