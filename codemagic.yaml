@@ -30,8 +30,13 @@ workflows:
         script: |
           cd ios/App
           xcodebuild build -project App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CONFIGURATION_BUILD_DIR=build/Release-iphoneos
+          
+          # Manual packaging into .ipa (unsigned)
+          cd build/Release-iphoneos
+          mkdir Payload
+          cp -r App.app Payload/
+          zip -r StudyOs.ipa Payload
     artifacts:
-      - ios/App/build/Release-iphoneos/*.app
       - ios/App/build/Release-iphoneos/*.ipa
     publishing:
       email:
