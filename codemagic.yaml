@@ -29,7 +29,7 @@ workflows:
       - name: Build iOS
         script: |
           cd ios/App
-          xcodebuild build -project App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS'
+          xcodebuild build -project App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
     artifacts:
       - ios/App/build/Release-iphoneos/*.ipa
     publishing:
