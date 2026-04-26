@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const { generate } = require('@capacitor/assets');
+const capacitorAssets = require('@capacitor/assets');
+const generate = capacitorAssets.generate || capacitorAssets.default;
 
 async function main() {
   try {
