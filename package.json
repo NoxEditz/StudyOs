@@ -10,9 +10,10 @@
     "prepare:web": "node scripts/prepare-web.js",
     "clean:generated": "node scripts/clean-generated.js",
     "organize": "node scripts/organize-project.js",
-    "ios:sync": "npm run prepare:web && npx cap sync ios",
+    "generate:assets": "npx @capacitor/assets generate --iconSrc ./assets/icon.png",
+    "ios:sync": "npm run prepare:web && npm run generate:assets && npx cap sync ios",
     "ios:open": "npx cap open ios",
-    "ios:setup": "npm run prepare:web && npx cap add ios && npx cap sync ios"
+    "ios:setup": "npm run prepare:web && npm run generate:assets && npx cap add ios && npx cap sync ios"
   },
   "keywords": [
     "study",
