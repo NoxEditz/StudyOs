@@ -15,10 +15,11 @@ workflows:
       
       - name: Generate app icons from assets/icon.png
         script: |
-          npm install --save-dev @capacitor/assets@latest
-          sleep 2
-          node -e "console.log('Checking @capacitor/assets...'); const pkg = require('@capacitor/assets/package.json'); console.log('Version:', pkg.version);"
-          node scripts/generate-icons.js
+          echo "Skipping icon generation due to @capacitor/assets compatibility issues."
+          echo "Please generate icons locally using: npx @capacitor/assets generate --iconSrc ./assets/icon.png --platform ios"
+          # npm install --save-dev @capacitor/assets@latest
+          # sleep 2
+          # node scripts/generate-icons.js
       
       - name: Prepare web files and sync Capacitor
         script: |
